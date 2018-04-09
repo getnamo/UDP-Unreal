@@ -70,13 +70,8 @@ void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 
 	FTimespan ThreadWaitTime = FTimespan::FromMilliseconds(100);
 	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, TEXT("UDP RECEIVER"));
-	UDPReceiver->OnDataReceived().BindLambda([this] (const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint){
-		TArray<uint8> Data;
-		Data.AddUninitialized(DataPtr->TotalSize());
-		DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
-		
-		OnMessage.Broadcast(Data);
-	});
+
+	UDPReceiver->OnDataReceived().BindUObject(this, &UUDPComponent::OnDataReceivedDelegate);
 	OnReceiveSocketStarted.Broadcast();
 }
 
@@ -84,6 +79,15 @@ void UUDPComponent::CloseReceiveSocket()
 {
 	if (ReceiverSocket)
 	{
+		UDPReceiver->Stop();
+		delete UDPReceiver;
+		UDPReceiver = nullptr;
+
+
+		ReceiverSocket->Close();
+		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(ReceiverSocket);
+		ReceiverSocket = nullptr;
+
 		OnReceiveSocketClosed.Broadcast();
 	}
 }
@@ -140,4 +144,13 @@ void UUDPComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	CloseReceiveSocket();
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void UUDPComponent::OnDataReceivedDelegate(const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint)
+{
+	TArray<uint8> Data;
+	Data.AddUninitialized(DataPtr->TotalSize());
+	DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
+
+	OnMessage.Broadcast(Data);
 }

@@ -130,6 +130,8 @@ protected:
 	FSocket* SenderSocket;
 	FSocket* ReceiverSocket;
 
+	void OnDataReceivedDelegate(const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint);
+
 	FUdpSocketReceiver* UDPReceiver;
 	FString SocketDescription;
 	TSharedPtr<FInternetAddr> RemoteAdress;
