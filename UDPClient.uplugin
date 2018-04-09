@@ -1,17 +1,16 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "0.1.0",
 	"FriendlyName": "UDPClient",
-	"Description": "udp convenience wrapper plugin.",
-	"Category": "Other",
+	"Description": "UDP convenience wrapper plugin.",
+	"Category": "Networking",
 	"CreatedBy": "getnamo",
-	"CreatedByURL": "",
-	"DocsURL": "",
+	"CreatedByURL": "http://getnamo.com/",
+	"DocsURL": "https://github.com/getnamo/udp-client-ue4",
 	"MarketplaceURL": "",
 	"SupportURL": "",
 	"CanContainContent": true,
-	"IsBetaVersion": false,
 	"Installed": false,
 	"Modules": [
 		{
