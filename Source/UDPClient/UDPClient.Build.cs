@@ -28,6 +28,8 @@ public class UDPClient : ModuleRules
 			new string[]
 			{
 				"Core",
+                "Sockets",
+                "Networking"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -40,6 +42,7 @@ public class UDPClient : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+                "CoreUtility"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
