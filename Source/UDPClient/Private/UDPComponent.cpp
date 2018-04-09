@@ -41,13 +41,17 @@ void UUDPComponent::Connect(const FString& InIP /*= TEXT("127.0.0.1")*/, const i
 	SenderSocket->SetReceiveBufferSize(BufferSize, BufferSize);
 
 	SenderSocket->Connect(*RemoteAdress);
-
-	//SenderSocket->re
+	
+	//todo: add correct connection event link
+	OnConnected.Broadcast();
 }
 
 void UUDPComponent::Disconnect()
 {
 	SenderSocket->Close();
+
+	//todo: add correct connection event link
+	OnDisconnected.Broadcast();
 }
 
 void UUDPComponent::Emit(const TArray<uint8>& Bytes)
