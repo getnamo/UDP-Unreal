@@ -6,19 +6,19 @@
 UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(init)
 {
 	bShouldAutoConnect = true;
+	bShouldAutoListen = true;
 	bWantsInitializeComponent = true;
 	bAutoActivate = true;
-	IP = FString(TEXT("127.0.0.1"));
-	Port = 3000;
-	SocketName = FString(TEXT("ue4-dgram"));
+	SendIP = FString(TEXT("127.0.0.1"));
+	SendPort = 3001;
+	ReceivePort = 3002;
+	SendSocketName = FString(TEXT("ue4-dgram-send"));
+	ReceiveSocketName = FString(TEXT("ue4-dgram-receive"));
 
-	ReconnectionTimeout = 0.f;
-	MaxReconnectionAttempts = -1.f;
-	ReconnectionDelayInMs = 5000;
 	BufferSize = 2 * 1024 * 1024;	//default roughly 2mb
 }
 
-void UUDPComponent::Connect(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
+void UUDPComponent::ConnectToSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
 {
 	RemoteAdress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	
@@ -32,7 +32,7 @@ void UUDPComponent::Connect(const FString& InIP /*= TEXT("127.0.0.1")*/, const i
 		return ;
 	}
 
-	SenderSocket = FUdpSocketBuilder(*SocketName).AsReusable().WithBroadcast();
+	SenderSocket = FUdpSocketBuilder(*SendSocketName).AsReusable().WithBroadcast();
 
 	//check(SenderSocket->GetSocketType() == SOCKTYPE_Datagram);
 
@@ -40,18 +40,65 @@ void UUDPComponent::Connect(const FString& InIP /*= TEXT("127.0.0.1")*/, const i
 	SenderSocket->SetSendBufferSize(BufferSize, BufferSize);
 	SenderSocket->SetReceiveBufferSize(BufferSize, BufferSize);
 
-	SenderSocket->Connect(*RemoteAdress);
-	
-	//todo: add correct connection event link
-	OnConnected.Broadcast();
+	bool bDidConnect = SenderSocket->Connect(*RemoteAdress);
+
+	if (bDidConnect)
+	{
+		//We should be ready to send things through our sending udp socket, no guarantees we're actually connected however.
+		OnSendSocketConnected.Broadcast();
+	}
+	else
+	{
+		OnSendSocketConnectionProblem.Broadcast();
+	}
 }
 
-void UUDPComponent::Disconnect()
+void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 {
-	SenderSocket->Close();
+	FIPv4Address Addr;
+	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr);
 
-	//todo: add correct connection event link
-	OnDisconnected.Broadcast();
+	//Create Socket
+	FIPv4Endpoint Endpoint(Addr, InListenPort);
+
+	ReceiverSocket = FUdpSocketBuilder(*ReceiveSocketName)
+		.AsNonBlocking()
+		.AsReusable()
+		.BoundToEndpoint(Endpoint)
+		.WithReceiveBufferSize(BufferSize);
+	;
+
+	FTimespan ThreadWaitTime = FTimespan::FromMilliseconds(100);
+	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, TEXT("UDP RECEIVER"));
+	UDPReceiver->OnDataReceived().BindLambda([this] (const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint){
+		TArray<uint8> Data;
+		Data.AddUninitialized(DataPtr->TotalSize());
+		DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
+		
+		OnMessage.Broadcast(Data);
+	});
+	OnReceiveSocketStarted.Broadcast();
+}
+
+void UUDPComponent::CloseReceiveSocket()
+{
+	if (ReceiverSocket)
+	{
+		OnReceiveSocketClosed.Broadcast();
+	}
+}
+
+void UUDPComponent::CloseSendSocket()
+{
+	if (SenderSocket)
+	{
+		SenderSocket->Close();
+		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(SenderSocket);
+		SenderSocket = nullptr;
+
+		//We disconnected on our end. Udp connections are by default unreliable.
+		OnSendSocketDisconnected.Broadcast();
+	}
 }
 
 void UUDPComponent::Emit(const TArray<uint8>& Bytes)
@@ -77,19 +124,20 @@ void UUDPComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (bShouldAutoListen)
+	{
+		StartReceiveSocket(ReceivePort);
+	}
 	if (bShouldAutoConnect)
 	{
-		Connect(IP, Port);
+		ConnectToSendSocket(SendIP, SendPort);
 	}
 }
 
 void UUDPComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (SenderSocket)
-	{
-		SenderSocket->Close();
-		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(SenderSocket);
-	}
+	CloseSendSocket();
+	CloseReceiveSocket();
 
 	Super::EndPlay(EndPlayReason);
 }

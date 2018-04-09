@@ -2,9 +2,11 @@
 
 #include "Components/ActorComponent.h"
 #include "Networking.h"
+#include "Runtime/Sockets/Public/IPAddress.h"
 #include "UDPComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FUDPEventSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPMessageSignature, const TArray<uint8>&, Bytes);
 
 UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
 class UDPCLIENT_API UUDPComponent : public UActorComponent
@@ -14,69 +16,60 @@ public:
 
 	//Async events
 
-	/** On bound event received. */
+	/** On message received on the receiving socket. */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnEvent;
+	FUDPMessageSignature OnMessage;
 
-	/** Received on socket.io connection established. */
+	/** Received when a udp connection should be connected for sending messages, no guarantee this has happened. */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnConnected;
+	FUDPEventSignature OnSendSocketConnected;
 
-	/** 
-	* Received on socket.io connection disconnected. This may never get 
-	* called in default settings, see OnConnectionProblems event for details. 
-	*/
+	/** If we failed to connect for whatever reason. */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnDisconnected;
+	FUDPEventSignature OnSendSocketConnectionProblem;
 
+	/** Without a custom system on both ends, we can only assume when udp is disconnected. */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPEventSignature OnSendSocketDisconnected;
+
+	/** Callback when we start listening */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPEventSignature OnReceiveSocketStarted;
+
+	/** Called after receiving socket has been closed. */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPEventSignature OnReceiveSocketClosed;
 
 
 	/** Default connection IP string in form e.g. 127.0.0.1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	FString IP;
+	FString SendIP;
 
-	/** Default connection port e.g. 3000*/
+	/** Default connection port e.g. 3001*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	int32 Port;
+	int32 SendPort;
+
+	/** Default connection port e.g. 3002*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	int32 ReceivePort;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	FString SocketName;
+	FString SendSocketName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	FString ReceiveSocketName;
+
+	/** in bytes */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 BufferSize;
 
-	/** If true will auto-connect on begin play to address specified in AddressAndPort. */
+	/** If true will auto-connect on begin play to IP/port specified for sending udp messages. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	bool bShouldAutoConnect;
 
-	/** Delay between reconnection attempts */
+	/** If true will auto-listen on begin play to port specified for receiving udp messages. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	int32 ReconnectionDelayInMs;
-
-	/**
-	* Number of times the connection should try before giving up.
-	* Default: infinity, this means you never truly disconnect, just suffer connection problems 
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	int32 MaxReconnectionAttempts;
-
-	/** Optional parameter to limit reconnections by elapsed time. Default: infinity. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	float ReconnectionTimeout;
-
-
-	/** 
-	* Toggle which enables plugin scoped connections. 
-	* If you enable this the connection will remain until you manually call disconnect
-	* or close the app. The latest connection with the same PluginScopedId will use the same connection
-	* as the previous one and receive the same events.
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Scope Properties")
-	bool bPluginScopedConnection;
-
-	/** If you leave this as is all plugin scoped connection components will share same connection*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Scope Properties")
-	FString PluginScopedId;
+	bool bShouldAutoListen;
 
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
 	bool bIsConnected;
@@ -89,13 +82,22 @@ public:
 	bool bIsHavingConnectionProblems;
 
 	/**
-	* Connect to a udp server, optional method if auto-connect is set to true.
+	* Connect to a udp endpoint, optional method if auto-connect is set to true.
 	*
 	* @param AddressAndPort	the address in URL format with port
 	*
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void Connect(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+	void ConnectToSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+
+	/** 
+	* Start listening at given port for udp messages. Will auto-listen on begin play by default
+	*/
+	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
+	void StartReceiveSocket(const int32 InListenPort = 3002);
+
+	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
+	void CloseReceiveSocket();
 
 	/**
 	* Disconnect from current socket.io server. This is an asynchronous action,
@@ -105,7 +107,7 @@ public:
 	* @param AddressAndPort	the address in URL format with port
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void Disconnect();
+	void CloseSendSocket();
 
 	//
 	//Blueprint Functions
@@ -126,6 +128,9 @@ public:
 	
 protected:
 	FSocket* SenderSocket;
+	FSocket* ReceiverSocket;
+
+	FUdpSocketReceiver* UDPReceiver;
 	FString SocketDescription;
 	TSharedPtr<FInternetAddr> RemoteAdress;
 	ISocketSubsystem* SocketSubsystem;
