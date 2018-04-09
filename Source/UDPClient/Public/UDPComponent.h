@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
+#include "Networking.h"
 #include "UDPComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FUDPEventSignature);
@@ -30,9 +31,19 @@ public:
 
 
 
-	/** Default connection address string in form e.g. http://localhost:80. */
+	/** Default connection IP string in form e.g. 127.0.0.1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	FString AddressAndPort;
+	FString IP;
+
+	/** Default connection port e.g. 3000*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	int32 Port;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	FString SocketName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	int32 BufferSize;
 
 	/** If true will auto-connect on begin play to address specified in AddressAndPort. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
@@ -84,7 +95,7 @@ public:
 	*
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void Connect(const FString& InAddressAndPort);
+	void Connect(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
 
 	/**
 	* Disconnect from current socket.io server. This is an asynchronous action,
@@ -111,7 +122,11 @@ public:
 	virtual void InitializeComponent() override;
 	virtual void UninitializeComponent() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 protected:
-
+	FSocket* SenderSocket;
+	FString SocketDescription;
+	TSharedPtr<FInternetAddr> RemoteAdress;
+	ISocketSubsystem* SocketSubsystem;
 };
