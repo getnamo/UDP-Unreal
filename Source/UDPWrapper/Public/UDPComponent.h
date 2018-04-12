@@ -59,6 +59,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	bool bShouldAutoListen;
 
+	/** Whether we should process our data on the gamethread or the udp thread. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	bool bReceiveDataOnGameThread;
+
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
 	bool bIsConnected;
 

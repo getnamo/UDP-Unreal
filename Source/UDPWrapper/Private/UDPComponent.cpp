@@ -1,12 +1,14 @@
 
 #include "UDPComponent.h"
 #include "LambdaRunnable.h"
+#include "Async.h"
 #include "Runtime/Sockets/Public/SocketSubsystem.h"
 
 UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(init)
 {
 	bShouldAutoConnect = true;
 	bShouldAutoListen = true;
+	bReceiveDataOnGameThread = true;
 	bWantsInitializeComponent = true;
 	bAutoActivate = true;
 	SendIP = FString(TEXT("127.0.0.1"));
@@ -46,7 +48,7 @@ void UUDPComponent::ConnectToSendSocket(const FString& InIP /*= TEXT("127.0.0.1"
 void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 {
 	FIPv4Address Addr;
-	FIPv4Address::Parse(TEXT("127.0.0.1"), Addr);
+	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr);
 
 	//Create Socket
 	FIPv4Endpoint Endpoint(Addr, InListenPort);
@@ -69,6 +71,8 @@ void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 
 	UDPReceiver->OnDataReceived().BindUObject(this, &UUDPComponent::OnDataReceivedDelegate);
 	OnReceiveSocketStartedListening.Broadcast();
+
+	UDPReceiver->Start();
 }
 
 void UUDPComponent::CloseReceiveSocket()
@@ -78,7 +82,6 @@ void UUDPComponent::CloseReceiveSocket()
 		UDPReceiver->Stop();
 		delete UDPReceiver;
 		UDPReceiver = nullptr;
-
 
 		ReceiverSocket->Close();
 		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(ReceiverSocket);
@@ -145,5 +148,16 @@ void UUDPComponent::OnDataReceivedDelegate(const FArrayReaderPtr& DataPtr, const
 	Data.AddUninitialized(DataPtr->TotalSize());
 	DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
 
-	OnReceivedBytes.Broadcast(Data);
+	if (bReceiveDataOnGameThread)
+	{
+		//Pass the reference to be used on gamethread
+		AsyncTask(ENamedThreads::GameThread, [&, Data]()
+		{
+			OnReceivedBytes.Broadcast(Data);
+		});
+	}
+	else
+	{
+		OnReceivedBytes.Broadcast(Data);
+	}
 }
