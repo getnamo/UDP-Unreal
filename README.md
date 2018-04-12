@@ -51,3 +51,9 @@ Wraps built-in ue4 udp functionality as an actor component with both sending and
  ### Reliable Stream
  
  Each relase includes the socket.io client plugin, that plugin is intended to be used for reliable control and then real-time/freshest data component of your network can be piped using this udp plugin. Consider timestamping your data so you can know which packets to drop/ignore.
+
+
+## Notes
+MIT licensed.
+
+Largely inspired from https://wiki.unrealengine.com/UDP_Socket_Sender_Receiver_From_One_UE4_Instance_To_Another.
