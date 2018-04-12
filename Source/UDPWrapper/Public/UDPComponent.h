@@ -20,7 +20,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPMessageSignature OnReceivedBytes;
 
-	/** Callback when we start listening */
+	/** Callback when we start listening on the udp receive socket*/
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPEventSignature OnReceiveSocketStartedListening;
 
@@ -28,8 +28,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPEventSignature OnReceiveSocketStoppedListening;
 
-
-	/** Default connection IP string in form e.g. 127.0.0.1. */
+	/** Default sending socket IP string in form e.g. 127.0.0.1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	FString SendIP;
 
@@ -69,12 +68,20 @@ public:
 
 	/**
 	* Connect to a udp endpoint, optional method if auto-connect is set to true.
+	* Emit function will then work as long the network is reachable. By default
+	* it will attempt this setup for this socket on beginplay.
 	*
-	* @param AddressAndPort	the address in URL format with port
-	*
+	* @param InIP the ip4 you wish to connect to
+	* @param InPort the udp port you wish to connect to
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	void ConnectToSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+
+	/**
+	* Close the sending socket. This is usually automatically done on endplay.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
+	void CloseSendSocket();
 
 	/** 
 	* Start listening at given port for udp messages. Will auto-listen on begin play by default
@@ -82,21 +89,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	void StartReceiveSocketListening(const int32 InListenPort = 3002);
 
+	/**
+	* Close the receiving socket. This is usually automatically done on endplay.
+	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	void CloseReceiveSocket();
 
 	/**
-	* Close the sending socket
-	*/
-	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void CloseSendSocket();
-
-	//
-	//Blueprint Functions
-	//
-
-	/**
-	* Emit bytes to the udp channel.
+	* Emit specified bytes to the udp channel.
 	*
 	* @param Message	Bytes
 	*/

@@ -3,6 +3,7 @@
 #include "LambdaRunnable.h"
 #include "Async.h"
 #include "Runtime/Sockets/Public/SocketSubsystem.h"
+#include "Runtime/Engine/Classes/Kismet/KismetSystemLibrary.h"
 
 UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(init)
 {
@@ -58,16 +59,10 @@ void UUDPComponent::StartReceiveSocketListening(const int32 InListenPort /*= 300
 		.AsReusable()
 		.BoundToEndpoint(Endpoint)
 		.WithReceiveBufferSize(BufferSize);
-	
-	/* doesn't work...
-	RemoteAdress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	bool bIsValid;
-	RemoteAdress->SetIp(TEXT("0.0.0.0"), bIsValid);
-	RemoteAdress->SetPort(InListenPort);
-	ReceiverSocket->Bind(*RemoteAdress);*/
 
 	FTimespan ThreadWaitTime = FTimespan::FromMilliseconds(100);
-	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, TEXT("UDP RECEIVER"));
+	FString ThreadName = FString::Printf(TEXT("UDP RECEIVER-%s"), *UKismetSystemLibrary::GetDisplayName(this));
+	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, *ThreadName);
 
 	UDPReceiver->OnDataReceived().BindUObject(this, &UUDPComponent::OnDataReceivedDelegate);
 	OnReceiveSocketStartedListening.Broadcast();
