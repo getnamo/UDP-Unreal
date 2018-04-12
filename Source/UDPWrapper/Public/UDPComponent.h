@@ -80,7 +80,7 @@ public:
 	* Start listening at given port for udp messages. Will auto-listen on begin play by default
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void StartReceiveSocket(const int32 InListenPort = 3002);
+	void StartReceiveSocketListening(const int32 InListenPort = 3002);
 
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	void CloseReceiveSocket();

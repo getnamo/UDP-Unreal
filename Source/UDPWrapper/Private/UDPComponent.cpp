@@ -45,7 +45,7 @@ void UUDPComponent::ConnectToSendSocket(const FString& InIP /*= TEXT("127.0.0.1"
 	bool bDidConnect = SenderSocket->Connect(*RemoteAdress);
 }
 
-void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
+void UUDPComponent::StartReceiveSocketListening(const int32 InListenPort /*= 3002*/)
 {
 	FIPv4Address Addr;
 	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr);
@@ -126,7 +126,7 @@ void UUDPComponent::BeginPlay()
 
 	if (bShouldAutoListen)
 	{
-		StartReceiveSocket(ReceivePort);
+		StartReceiveSocketListening(ReceivePort);
 	}
 	if (bShouldAutoConnect)
 	{
