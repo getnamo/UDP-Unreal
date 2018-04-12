@@ -56,7 +56,7 @@ void UUDPComponent::ConnectToSendSocket(const FString& InIP /*= TEXT("127.0.0.1"
 void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 {
 	FIPv4Address Addr;
-	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr);
+	FIPv4Address::Parse(TEXT("127.0.0.1"), Addr);
 
 	//Create Socket
 	FIPv4Endpoint Endpoint(Addr, InListenPort);
@@ -66,7 +66,13 @@ void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 		.AsReusable()
 		.BoundToEndpoint(Endpoint)
 		.WithReceiveBufferSize(BufferSize);
-	;
+	
+	/* doesn't work...
+	RemoteAdress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	bool bIsValid;
+	RemoteAdress->SetIp(TEXT("0.0.0.0"), bIsValid);
+	RemoteAdress->SetPort(InListenPort);
+	ReceiverSocket->Bind(*RemoteAdress);*/
 
 	FTimespan ThreadWaitTime = FTimespan::FromMilliseconds(100);
 	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, TEXT("UDP RECEIVER"));

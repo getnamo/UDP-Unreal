@@ -1,15 +1,15 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
-#include "UDPClient.h"
+#include "UDPWrapper.h"
 
-#define LOCTEXT_NAMESPACE "FUDPClientModule"
+#define LOCTEXT_NAMESPACE "FUDPWrapperModule"
 
-void FUDPClientModule::StartupModule()
+void FUDPWrapperModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 }
 
-void FUDPClientModule::ShutdownModule()
+void FUDPWrapperModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -17,4 +17,4 @@ void FUDPClientModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FUDPClientModule, UDPClient)
+IMPLEMENT_MODULE(FUDPWrapperModule, UDPWrapper)

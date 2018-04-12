@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "ModuleManager.h"
 
-class FUDPClientModule : public IModuleInterface
+class FUDPWrapperModule : public IModuleInterface
 {
 public:
 

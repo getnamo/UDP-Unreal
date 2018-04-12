@@ -2,15 +2,15 @@
 
 using UnrealBuildTool;
 
-public class UDPClient : ModuleRules
+public class UDPWrapper : ModuleRules
 {
-	public UDPClient(ReadOnlyTargetRules Target) : base(Target)
+	public UDPWrapper(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				"UDPClient/Public"
+				"UDPWrapper/Public"
 				// ... add public include paths required here ...
 			}
 			);
@@ -18,7 +18,7 @@ public class UDPClient : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				"UDPClient/Private",
+				"UDPWrapper/Private",
 				// ... add other private include paths required here ...
 			}
 			);
