@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "0.1.0",
-	"FriendlyName": "UDPClient",
+	"FriendlyName": "UDPWrapper",
 	"Description": "UDP convenience wrapper plugin.",
 	"Category": "Networking",
 	"CreatedBy": "getnamo",
@@ -14,7 +14,7 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "UDPClient",
+			"Name": "UDPWrapper",
 			"Type": "Developer",
 			"LoadingPhase": "Default"
 		}

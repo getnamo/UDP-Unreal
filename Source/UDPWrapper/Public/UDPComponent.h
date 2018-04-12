@@ -9,7 +9,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FUDPEventSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPMessageSignature, const TArray<uint8>&, Bytes);
 
 UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
-class UDPCLIENT_API UUDPComponent : public UActorComponent
+class UDPWRAPPER_API UUDPComponent : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
 public:
@@ -18,27 +18,15 @@ public:
 
 	/** On message received on the receiving socket. */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPMessageSignature OnMessage;
-
-	/** Received when a udp connection should be connected for sending messages, no guarantee this has happened. */
-	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnSendSocketConnected;
-
-	/** If we failed to connect for whatever reason. */
-	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnSendSocketConnectionProblem;
-
-	/** Without a custom system on both ends, we can only assume when udp is disconnected. */
-	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnSendSocketDisconnected;
+	FUDPMessageSignature OnReceivedBytes;
 
 	/** Callback when we start listening */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnReceiveSocketStarted;
+	FUDPEventSignature OnReceiveSocketStartedListening;
 
 	/** Called after receiving socket has been closed. */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnReceiveSocketClosed;
+	FUDPEventSignature OnReceiveSocketStoppedListening;
 
 
 	/** Default connection IP string in form e.g. 127.0.0.1. */
@@ -74,12 +62,6 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
 	bool bIsConnected;
 
-	/** When connected this session id will be valid and contain a unique Id. */
-	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
-	FString SessionId;
-
-	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
-	bool bIsHavingConnectionProblems;
 
 	/**
 	* Connect to a udp endpoint, optional method if auto-connect is set to true.
@@ -100,11 +82,7 @@ public:
 	void CloseReceiveSocket();
 
 	/**
-	* Disconnect from current socket.io server. This is an asynchronous action,
-	* subscribe to OnDisconnected to know when you can safely continue from a 
-	* disconnected state.
-	*
-	* @param AddressAndPort	the address in URL format with port
+	* Close the sending socket
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	void CloseSendSocket();

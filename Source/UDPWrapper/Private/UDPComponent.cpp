@@ -41,16 +41,6 @@ void UUDPComponent::ConnectToSendSocket(const FString& InIP /*= TEXT("127.0.0.1"
 	SenderSocket->SetReceiveBufferSize(BufferSize, BufferSize);
 
 	bool bDidConnect = SenderSocket->Connect(*RemoteAdress);
-
-	if (bDidConnect)
-	{
-		//We should be ready to send things through our sending udp socket, no guarantees we're actually connected however.
-		OnSendSocketConnected.Broadcast();
-	}
-	else
-	{
-		OnSendSocketConnectionProblem.Broadcast();
-	}
 }
 
 void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
@@ -78,7 +68,7 @@ void UUDPComponent::StartReceiveSocket(const int32 InListenPort /*= 3002*/)
 	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, TEXT("UDP RECEIVER"));
 
 	UDPReceiver->OnDataReceived().BindUObject(this, &UUDPComponent::OnDataReceivedDelegate);
-	OnReceiveSocketStarted.Broadcast();
+	OnReceiveSocketStartedListening.Broadcast();
 }
 
 void UUDPComponent::CloseReceiveSocket()
@@ -94,7 +84,7 @@ void UUDPComponent::CloseReceiveSocket()
 		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(ReceiverSocket);
 		ReceiverSocket = nullptr;
 
-		OnReceiveSocketClosed.Broadcast();
+		OnReceiveSocketStoppedListening.Broadcast();
 	}
 }
 
@@ -105,9 +95,6 @@ void UUDPComponent::CloseSendSocket()
 		SenderSocket->Close();
 		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(SenderSocket);
 		SenderSocket = nullptr;
-
-		//We disconnected on our end. Udp connections are by default unreliable.
-		OnSendSocketDisconnected.Broadcast();
 	}
 }
 
@@ -158,5 +145,5 @@ void UUDPComponent::OnDataReceivedDelegate(const FArrayReaderPtr& DataPtr, const
 	Data.AddUninitialized(DataPtr->TotalSize());
 	DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
 
-	OnMessage.Broadcast(Data);
+	OnReceivedBytes.Broadcast(Data);
 }
