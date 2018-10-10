@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.1.0",
+	"VersionName": "0.1.1",
 	"FriendlyName": "UDPWrapper",
 	"Description": "UDP convenience wrapper plugin.",
 	"Category": "Networking",
@@ -15,7 +15,7 @@
 	"Modules": [
 		{
 			"Name": "UDPWrapper",
-			"Type": "Developer",
+			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
 	],
