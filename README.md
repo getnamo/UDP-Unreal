@@ -6,7 +6,7 @@ Convenience ActorComponent UDP wrapper for Unreal Engine 4.
 
 This may not be the most sensible wrapper for your use case, but is meant to co-exist with https://github.com/getnamo/socketio-client-ue4 with similar workflow.
 
-Wraps built-in ue4 udp functionality as an actor component with both sending and receiving capabilities. Confirmed working with node.js [dgram](https://nodejs.org/api/dgram.html).
+Wraps built-in ue4 udp functionality as an actor component with both sending and receiving capabilities. Confirmed working with node.js [dgram](https://nodejs.org/api/dgram.html) (see [example echo server gist](https://gist.github.com/getnamo/8117fdc64209af086ce0337310c52a51) for testing).
 
 ## Quick Install & Setup
 
