@@ -28,8 +28,8 @@ public class UDPWrapper : ModuleRules
 			new string[]
 			{
 				"Core",
-                "Sockets",
-                "Networking"
+				"Sockets",
+				"Networking"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -41,8 +41,7 @@ public class UDPWrapper : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
-                "CoreUtility"
+				"SlateCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
