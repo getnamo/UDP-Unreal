@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "0.2.0",
 	"FriendlyName": "UDPWrapper",
-	"Description": "UDP convenience wrapper plugin.",
+	"Description": "Convenience UDP wrapper plugin.",
 	"Category": "Networking",
 	"CreatedBy": "getnamo",
 	"CreatedByURL": "http://getnamo.com/",
