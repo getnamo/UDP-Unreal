@@ -1,6 +1,7 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class UDPWrapper : ModuleRules
 {
@@ -10,7 +11,7 @@ public class UDPWrapper : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				"UDPWrapper/Public"
+				Path.Combine(ModuleDirectory, "Public"),
 				// ... add public include paths required here ...
 			}
 			);
@@ -18,7 +19,7 @@ public class UDPWrapper : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				"UDPWrapper/Private",
+				Path.Combine(ModuleDirectory, "Private"),
 				// ... add other private include paths required here ...
 			}
 			);
