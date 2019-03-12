@@ -18,6 +18,9 @@ UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(i
 	ReceiveSocketName = FString(TEXT("ue4-dgram-receive"));
 
 	BufferSize = 2 * 1024 * 1024;	//default roughly 2mb
+
+	SenderSocket = nullptr;
+	ReceiveSocket = nullptr;
 }
 
 void UUDPComponent::ConnectToSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
