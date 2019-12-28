@@ -34,7 +34,7 @@ Wraps built-in ue4 udp functionality as an actor component with both sending and
  
  ### Sending
  
- Once you've auto-connected or manually connected to the sending socket, use emit to send some data, utf8 conversion provided by socket.io plugin.
+ Once you've auto-connected (more accurately prepared sending socket, since you don't get a callback in UDP like in TCP) or manually connected to the sending socket, use emit to send some data, utf8 conversion provided by socket.io plugin.
  
  ![emit](https://i.imgur.com/3EIT8TL.png)
  
