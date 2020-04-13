@@ -1,8 +1,8 @@
 
 #include "UDPComponent.h"
-#include "Async.h"
-#include "Runtime/Sockets/Public/SocketSubsystem.h"
-#include "Runtime/Engine/Classes/Kismet/KismetSystemLibrary.h"
+#include "Async/Async.h"
+#include "SocketSubsystem.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(init)
 {
