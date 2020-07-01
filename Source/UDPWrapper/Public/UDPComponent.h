@@ -5,28 +5,10 @@
 #include "Runtime/Sockets/Public/IPAddress.h"
 #include "UDPComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FUDPEventSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPMessageSignature, const TArray<uint8>&, Bytes);
-
-UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
-class UDPWRAPPER_API UUDPComponent : public UActorComponent
+USTRUCT(BlueprintType)
+struct UDPWRAPPER_API FUDPSettings
 {
-	GENERATED_UCLASS_BODY()
-public:
-
-	//Async events
-
-	/** On message received on the receiving socket. */
-	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPMessageSignature OnReceivedBytes;
-
-	/** Callback when we start listening on the udp receive socket*/
-	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnReceiveSocketStartedListening;
-
-	/** Called after receiving socket has been closed. */
-	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPEventSignature OnReceiveSocketStoppedListening;
+	GENERATED_USTRUCT_BODY()
 
 	/** Default sending socket IP string in form e.g. 127.0.0.1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
@@ -50,21 +32,97 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 BufferSize;
 
-	/** If true will auto-connect on begin play to IP/port specified for sending udp messages. */
+	/** If true will auto-connect on begin play to IP/port specified for sending udp messages, plus when emit is called */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	bool bShouldAutoConnect;
+	bool bShouldAutoOpenSend;
 
 	/** If true will auto-listen on begin play to port specified for receiving udp messages. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	bool bShouldAutoListen;
+	bool bShouldAutoOpenReceive;
 
 	/** Whether we should process our data on the gamethread or the udp thread. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	bool bReceiveDataOnGameThread;
 
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
-	bool bIsConnected;
+	bool bIsReceiveOpen;
 
+	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
+	bool bIsSendOpen;
+
+	FUDPSettings();
+};
+
+class UDPWRAPPER_API FUDPNative
+{
+public:
+
+	TFunction<void(const TArray<uint8>&)> OnReceivedBytes;
+	TFunction<void(int32 Port)> OnReceiveOpened;
+	TFunction<void(int32 Port)> OnReceiveClosed;
+	TFunction<void(int32 Port)> OnSendOpened;
+	TFunction<void(int32 Port)> OnSendClosed;
+
+	FUDPSettings Settings;
+
+	FUDPNative();
+	~FUDPNative();
+
+	//Send
+	void OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+	void CloseSendSocket();
+
+	void EmitBytes(const TArray<uint8>& Bytes);
+
+	//Receive
+	void OpenReceiveSocket(const int32 InListenPort = 3002);
+	void CloseReceiveSocket();
+
+protected:
+	void ClearSendCallbacks();
+	void ClearReceiveCallbacks();
+
+	FSocket* SenderSocket;
+	FSocket* ReceiverSocket;
+	FUdpSocketReceiver* UDPReceiver;
+	FString SocketDescription;
+	TSharedPtr<FInternetAddr> RemoteAdress;
+	ISocketSubsystem* SocketSubsystem;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPSocketStateSignature, int32, Port);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPMessageSignature, const TArray<uint8>&, Bytes);
+
+UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
+class UDPWRAPPER_API UUDPComponent : public UActorComponent
+{
+	GENERATED_UCLASS_BODY()
+public:
+
+	//Async events
+
+	/** On message received on the receiving socket. */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPMessageSignature OnReceivedBytes;
+
+	/** Callback when we start listening on the udp receive socket*/
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPSocketStateSignature OnReceiveSocketOpened;
+
+	/** Called after receiving socket has been closed. */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPSocketStateSignature OnReceiveSocketClosed;
+
+	/** The send pipeline is ready to use */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPSocketStateSignature OnSendSocketOpened;
+
+	/** The send pipeline can't receive emit */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
+	FUDPSocketStateSignature OnSendSocketClosed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	FUDPSettings Settings;
 
 	/**
 	* Connect to a udp endpoint, optional method if auto-connect is set to true.
@@ -75,7 +133,7 @@ public:
 	* @param InPort the udp port you wish to connect to
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void ConnectToSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+	void OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
 
 	/**
 	* Close the sending socket. This is usually automatically done on endplay.
@@ -87,7 +145,7 @@ public:
 	* Start listening at given port for udp messages. Will auto-listen on begin play by default
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void StartReceiveSocketListening(const int32 InListenPort = 3002);
+	void OpenReceiveSocket(const int32 InListenPort = 3002);
 
 	/**
 	* Close the receiving socket. This is usually automatically done on endplay.
@@ -101,7 +159,7 @@ public:
 	* @param Message	Bytes
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void Emit(const TArray<uint8>& Bytes);
+	void EmitBytes(const TArray<uint8>& Bytes);
 
 	virtual void InitializeComponent() override;
 	virtual void UninitializeComponent() override;
@@ -109,13 +167,6 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 protected:
-	FSocket* SenderSocket;
-	FSocket* ReceiverSocket;
-
-	void OnDataReceivedDelegate(const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint);
-
-	FUdpSocketReceiver* UDPReceiver;
-	FString SocketDescription;
-	TSharedPtr<FInternetAddr> RemoteAdress;
-	ISocketSubsystem* SocketSubsystem;
+	TSharedPtr<FUDPNative> Native;
+	void LinkupCallbacks();
 };
