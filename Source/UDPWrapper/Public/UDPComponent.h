@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "Networking.h"
-#include "Runtime/Sockets/Public/IPAddress.h"
+#include "Sockets/Public/IPAddress.h"
+#include "Common/UdpSocketBuilder.h"
+#include "Common/UdpSocketReceiver.h"
+#include "Common/UdpSocketSender.h"
 #include "UDPComponent.generated.h"
 
 USTRUCT(BlueprintType)
