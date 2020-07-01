@@ -95,6 +95,9 @@ void UUDPComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	CloseSendSocket();
 	CloseReceiveSocket();
 
+	Native->ClearSendCallbacks();
+	Native->ClearReceiveCallbacks();
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -112,10 +115,12 @@ FUDPNative::~FUDPNative()
 	if (Settings.bIsReceiveOpen)
 	{
 		CloseReceiveSocket();
+		ClearReceiveCallbacks();
 	}
 	if (Settings.bIsSendOpen)
 	{
 		CloseSendSocket();
+		ClearSendCallbacks();
 	}
 }
 

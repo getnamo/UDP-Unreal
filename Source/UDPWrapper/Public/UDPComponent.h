@@ -80,9 +80,10 @@ public:
 	void OpenReceiveSocket(const int32 InListenPort = 3002);
 	void CloseReceiveSocket();
 
-protected:
+	//Callback convenience
 	void ClearSendCallbacks();
 	void ClearReceiveCallbacks();
+protected:
 
 	FSocket* SenderSocket;
 	FSocket* ReceiverSocket;
