@@ -32,9 +32,9 @@ void UUDPComponent::LinkupCallbacks()
 	{
 		OnReceiveSocketClosed.Broadcast(Port);
 	};
-	Native->OnReceivedBytes = [this](const TArray<uint8>& Data)
+	Native->OnReceivedBytes = [this](const TArray<uint8>& Data, const FString& Endpoint)
 	{
-		OnReceivedBytes.Broadcast(Data);
+		OnReceivedBytes.Broadcast(Data, Endpoint);
 	};
 }
 
@@ -226,18 +226,18 @@ void FUDPNative::OpenReceiveSocket(const int32 InListenPort /*= 3002*/)
 		if (Settings.bReceiveDataOnGameThread)
 		{
 			//Pass the reference to be used on gamethread
-			AsyncTask(ENamedThreads::GameThread, [this, Data]()
+			AsyncTask(ENamedThreads::GameThread, [this, Data, Endpoint]()
 			{
 				//double check we're still bound on this thread
 				if (OnReceivedBytes)
 				{
-					OnReceivedBytes(Data);
+					OnReceivedBytes(Data, Endpoint.Address.ToString());
 				}
 			});
 		}
 		else
 		{
-			OnReceivedBytes(Data);
+			OnReceivedBytes(Data, Endpoint.Address.ToString());
 		}
 	});
 
