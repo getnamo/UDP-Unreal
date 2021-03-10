@@ -222,22 +222,23 @@ void FUDPNative::OpenReceiveSocket(const int32 InListenPort /*= 3002*/)
 		Data.AddUninitialized(DataPtr->TotalSize());
 		DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
 
-		
+		FString SenderIp = Endpoint.Address.ToString();
+
 		if (Settings.bReceiveDataOnGameThread)
 		{
-			//Pass the reference to be used on gamethread
-			AsyncTask(ENamedThreads::GameThread, [this, Data, Endpoint]()
+			//Copy data to receiving thread via lambda capture
+			AsyncTask(ENamedThreads::GameThread, [this, Data, SenderIp]()
 			{
 				//double check we're still bound on this thread
 				if (OnReceivedBytes)
 				{
-					OnReceivedBytes(Data, Endpoint.Address.ToString());
+					OnReceivedBytes(Data, SenderIp);
 				}
 			});
 		}
 		else
 		{
-			OnReceivedBytes(Data, Endpoint.Address.ToString());
+			OnReceivedBytes(Data, SenderIp);
 		}
 	});
 
