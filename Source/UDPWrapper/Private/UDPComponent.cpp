@@ -140,8 +140,6 @@ void FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, con
 
 	SenderSocket = FUdpSocketBuilder(*Settings.SendSocketName).AsReusable().WithBroadcast();
 
-	//check(SenderSocket->GetSocketType() == SOCKTYPE_Datagram);
-
 	//Set Send Buffer Size
 	SenderSocket->SetSendBufferSize(Settings.BufferSize, Settings.BufferSize);
 	SenderSocket->SetReceiveBufferSize(Settings.BufferSize, Settings.BufferSize);
@@ -192,8 +190,6 @@ void FUDPNative::OpenReceiveSocket(const int32 InListenPort /*= 3002*/)
 	{
 		CloseReceiveSocket();
 	}
-
-	//(const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint);
 
 	FIPv4Address Addr;
 	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr);
