@@ -94,7 +94,7 @@ protected:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPSocketStateSignature, int32, Port);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPMessageSignature, const TArray<uint8>&, Bytes, const FString, IPAddress);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPMessageSignature, const TArray<uint8>&, Bytes, const FString&, IPAddress);
 
 UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
 class UDPWRAPPER_API UUDPComponent : public UActorComponent
