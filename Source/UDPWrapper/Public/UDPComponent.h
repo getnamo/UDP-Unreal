@@ -20,6 +20,10 @@ struct UDPWRAPPER_API FUDPSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 SendPort;
 
+	/** Default listen port e.g. 0.0.0.0*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	FString ReceiveIP;
+
 	/** Default connection port e.g. 3002*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 ReceivePort;
@@ -71,13 +75,13 @@ public:
 	~FUDPNative();
 
 	//Send
-	void OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+	int32 OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
 	void CloseSendSocket();
 
 	void EmitBytes(const TArray<uint8>& Bytes);
 
 	//Receive
-	void OpenReceiveSocket(const int32 InListenPort = 3002);
+	void OpenReceiveSocket(const FString& InIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
 	void CloseReceiveSocket();
 
 	//Callback convenience
@@ -136,7 +140,7 @@ public:
 	* @param InPort the udp port you wish to connect to
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
+	int32 OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
 
 	/**
 	* Close the sending socket. This is usually automatically done on endplay.
@@ -148,7 +152,7 @@ public:
 	* Start listening at given port for udp messages. Will auto-listen on begin play by default
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void OpenReceiveSocket(const int32 InListenPort = 3002);
+	void OpenReceiveSocket(const FString& InListenIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
 
 	/**
 	* Close the receiving socket. This is usually automatically done on endplay.

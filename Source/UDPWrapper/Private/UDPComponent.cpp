@@ -43,9 +43,9 @@ void UUDPComponent::CloseReceiveSocket()
 	Native->CloseReceiveSocket();
 }
 
-void UUDPComponent::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
+int32 UUDPComponent::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
 {
-	Native->OpenSendSocket(InIP, InPort);
+	return Native->OpenSendSocket(InIP, InPort);
 }
 
 void UUDPComponent::CloseSendSocket()
@@ -53,9 +53,9 @@ void UUDPComponent::CloseSendSocket()
 	Native->CloseSendSocket();
 }
 
-void UUDPComponent::OpenReceiveSocket(const int32 InListenPort /*= 3002*/)
+void UUDPComponent::OpenReceiveSocket(const FString& InListenIp /*= TEXT("0.0.0.0")*/, const int32 InListenPort /*= 3002*/)
 {
-	Native->OpenReceiveSocket(InListenPort);
+	Native->OpenReceiveSocket(InListenIp, InListenPort);
 }
 
 void UUDPComponent::EmitBytes(const TArray<uint8>& Bytes)
@@ -82,7 +82,7 @@ void UUDPComponent::BeginPlay()
 
 	if (Settings.bShouldAutoOpenReceive)
 	{
-		Native->OpenReceiveSocket(Settings.ReceivePort);
+		Native->OpenReceiveSocket(Settings.ReceiveIP, Settings.ReceivePort);
 	}
 	if (Settings.bShouldAutoOpenSend)
 	{
@@ -124,7 +124,7 @@ FUDPNative::~FUDPNative()
 	}
 }
 
-void FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
+int32 FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
 {
 	RemoteAdress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 
@@ -135,7 +135,7 @@ void FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, con
 	if (!bIsValid)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UDP address is invalid <%s:%d>"), *InIP, InPort);
-		return;
+		return -1;
 	}
 
 	SenderSocket = FUdpSocketBuilder(*Settings.SendSocketName).AsReusable().WithBroadcast();
@@ -151,6 +151,8 @@ void FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, con
 	{	
 		OnSendOpened(Settings.SendPort);
 	}
+
+	return SenderSocket->GetPortNo();
 }
 
 void FUDPNative::CloseSendSocket()
@@ -184,7 +186,7 @@ void FUDPNative::EmitBytes(const TArray<uint8>& Bytes)
 	}
 }
 
-void FUDPNative::OpenReceiveSocket(const int32 InListenPort /*= 3002*/)
+void FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")*/, const int32 InListenPort /*= 3002*/)
 {
 	if (Settings.bIsReceiveOpen)
 	{
@@ -192,7 +194,7 @@ void FUDPNative::OpenReceiveSocket(const int32 InListenPort /*= 3002*/)
 	}
 
 	FIPv4Address Addr;
-	FIPv4Address::Parse(TEXT("0.0.0.0"), Addr);
+	FIPv4Address::Parse(InListenIP, Addr);
 
 	//Create Socket
 	FIPv4Endpoint Endpoint(Addr, InListenPort);
@@ -290,6 +292,7 @@ FUDPSettings::FUDPSettings()
 	bReceiveDataOnGameThread = true;
 	SendIP = FString(TEXT("127.0.0.1"));
 	SendPort = 3001;
+	ReceiveIP = FString(TEXT("0.0.0.0"));
 	ReceivePort = 3002;
 	SendSocketName = FString(TEXT("ue4-dgram-send"));
 	ReceiveSocketName = FString(TEXT("ue4-dgram-receive"));
