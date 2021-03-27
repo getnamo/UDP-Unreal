@@ -244,7 +244,7 @@ void FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 
 	if (OnReceiveOpened)
 	{
-		OnReceiveOpened(Settings.ReceivePort);
+		OnReceiveOpened(InListenPort);
 	}
 
 	UDPReceiver->Start();
