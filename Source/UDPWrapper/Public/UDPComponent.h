@@ -20,7 +20,7 @@ struct UDPWRAPPER_API FUDPSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 SendPort;
 
-	/** Default listen port e.g. 0.0.0.0*/
+	/** Default receiving socket IP string in form e.g. 0.0.0.0. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	FString ReceiveIP;
 
