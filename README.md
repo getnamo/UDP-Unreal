@@ -16,41 +16,52 @@ Wraps built-in ue4 udp functionality as an actor component with both sending and
  4. Copy *Plugins* folder into your Project root.
  5. Plugin should be now ready to use.
  
- ## How to use - Basics
+## How to use - Basics
  
- Select an actor of choice. Add UDP component to that actor.
+Select an actor of choice. Add UDP component to that actor.
  
- ![add component](https://i.imgur.com/EnCiU4K.png)
+![add component](https://i.imgur.com/EnCiU4K.png)
  
- Select the newly created component and modify any default settings
+Select the newly created component and modify any default settings
  
- ![defaults](https://i.imgur.com/nANqpPF.png)
+![defaults](https://i.imgur.com/wyYN2pU.png)
+
+By default the udp actor component will auto open both send and receive sockets on begin play. If you're only interested in sending, untick should auto open receive; conversely untick auto open send if you're not interested in sending.
  
- e.g. if you're only interested in sending, untick should auto-listen and modify your send ip/port to match your desired settings. Conversely you can untick auto-connect if you're not interested in sending.
+Also if you want to connect/listen on your own time either or both and connect manually via e.g. key event
  
- Also if you want to connect/listen on your own time untick both and connect manually via e.g. key event
+![manual open receive](https://i.imgur.com/HkSvGCb.png)
  
- ![manual connect](https://i.imgur.com/HVrsO2p.png)
+Receive Ip of 0.0.0.0 will listen to all connections on specified port.
  
- ### Sending
+### Sending
  
- Once you've auto-connected (more accurately prepared sending socket, since you don't get a callback in UDP like in TCP) or manually connected to the sending socket, use emit to send some data, utf8 conversion provided by socket.io plugin.
+Once your sending socket is opened (more accurately prepared socket for sending, since you don't get a callback in UDP like in TCP), use emit to send some data, utf8 conversion provided by socket.io plugin. NB: if you forget to open your socket, emit will auto-open on default settings and emit.
  
- ![emit](https://i.imgur.com/3EIT8TL.png)
+![emit](https://i.imgur.com/OzG0caw.png)
  
- ### Receiving
+returns true if the emit processed. NB: udp is unreliable so this is not a return that the data was received on the other end, for a reliable connection consider TCP.
  
- ![events](https://i.imgur.com/IRE54zq.png)
+### Receiving
  
- Once you've started listening to data you'll receive data on the ```OnReceivedBytes``` event
+![events](https://i.imgur.com/1mdlQdI.png)
  
- ![receive bytes](https://i.imgur.com/YCEUCkW.png)
+Once you've opened your receive socket you'll receive data on the ```OnReceivedBytes``` event
  
- which you can convert to convenient strings or structures via socket.io (optional).
+![receive bytes](https://i.imgur.com/1Lq0mDg.png)
  
- ### Reliable Stream
+which you can convert to convenient strings or structures via socket.io (optional and requires your server sends data as JSON strings).
+
+#### Receiving on Bound Send port
+
+Since v0.9.4 when you open a send port it will generate a bound send port which you can use to listen. This should help NAT piercing. To use this feature untick should auto open receive and open your receive socket on the send socket open event with the bound port.
+
+![image](https://user-images.githubusercontent.com/542365/112771022-7c8c1900-8fde-11eb-971e-e81c3d4e55cd.png)
+
  
- Each release includes the socket.io client plugin, that plugin is intended to be used for reliable control and then real-time/freshest data component of your network can be piped using this udp plugin. Consider timestamping your data so you can know which packets to drop/ignore.
+### Reliable Stream
+ 
+Each release includes the socket.io client plugin, that plugin is intended to be used for reliable control and then real-time/freshest data component of your network can be piped using this udp plugin. Consider timestamping your data so you can know which packets to drop/ignore.
 
 ## Packaging
 
