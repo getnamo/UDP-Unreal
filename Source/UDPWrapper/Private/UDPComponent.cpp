@@ -86,13 +86,21 @@ void UUDPComponent::BeginPlay()
 	//Sync settings
 	Native->Settings = Settings;
 
-	if (Settings.bShouldAutoOpenReceive)
-	{
-		OpenReceiveSocket(Settings.ReceiveIP, Settings.ReceivePort);
-	}
 	if (Settings.bShouldAutoOpenSend)
 	{
 		OpenSendSocket(Settings.SendIP, Settings.SendPort);
+	}
+
+	if (Settings.bShouldAutoOpenReceive)
+	{
+		if (Settings.bShouldAutoOpenBoundPort)
+		{
+			OpenReceiveSocket(Settings.ReceiveIP, Settings.SendBoundPort);
+		}
+		else
+		{
+			OpenReceiveSocket(Settings.ReceiveIP, Settings.ReceivePort);
+		}
 	}
 }
 
@@ -310,6 +318,7 @@ FUDPSettings::FUDPSettings()
 {
 	bShouldAutoOpenSend = true;
 	bShouldAutoOpenReceive = true;
+	bShouldAutoOpenBoundPort = false;
 	bReceiveDataOnGameThread = true;
 	SendIP = FString(TEXT("127.0.0.1"));
 	SendPort = 3001;
