@@ -20,7 +20,11 @@ struct UDPWRAPPER_API FUDPSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 SendPort;
 
-	/** Default receiving socket IP string in form e.g. 0.0.0.0. */
+	/** Port to which send is bound to on this client (this should change on each open) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	int32 SendBoundPort;
+
+	/** Default receiving socket IP string in form e.g. 0.0.0.0 for all connections, may need 127.0.0.1 for some cases. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	FString ReceiveIP;
 
@@ -66,7 +70,7 @@ public:
 	TFunction<void(const TArray<uint8>&, const FString&)> OnReceivedBytes;
 	TFunction<void(int32 Port)> OnReceiveOpened;
 	TFunction<void(int32 Port)> OnReceiveClosed;
-	TFunction<void(int32 Port)> OnSendOpened;
+	TFunction<void(int32 SpecifiedPort, int32 BoundPort)> OnSendOpened;
 	TFunction<void(int32 Port)> OnSendClosed;
 
 	FUDPSettings Settings;
@@ -75,14 +79,31 @@ public:
 	~FUDPNative();
 
 	//Send
+	/**
+	* Open socket for sending and return bound port
+	*/
 	int32 OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
-	void CloseSendSocket();
 
-	void EmitBytes(const TArray<uint8>& Bytes);
+	/**
+	* Close current sending socket, returns true if successful
+	*/
+	bool CloseSendSocket();
+
+	/** 
+	* Emit given bytes to send socket. If Settings.bShouldAutoOpenSend is true it will auto-open socket.
+	* Returns true if bytes emitted successfully
+	*/
+	bool EmitBytes(const TArray<uint8>& Bytes);
 
 	//Receive
-	void OpenReceiveSocket(const FString& InIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
-	void CloseReceiveSocket();
+	/**
+	* Open current receiving socket, returns true if successful
+	*/
+	bool OpenReceiveSocket(const FString& InIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
+	/**
+	* Close current receiving socket, returns true if successful
+	*/
+	bool CloseReceiveSocket();
 
 	//Callback convenience
 	void ClearSendCallbacks();
@@ -98,6 +119,7 @@ protected:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPSocketStateSignature, int32, Port);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPSocketSendStateSignature, int32, SpecifiedPort, int32, BoundPort);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPMessageSignature, const TArray<uint8>&, Bytes, const FString&, IPAddress);
 
 UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
@@ -122,7 +144,7 @@ public:
 
 	/** The send pipeline is ready to use */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
-	FUDPSocketStateSignature OnSendSocketOpened;
+	FUDPSocketSendStateSignature OnSendSocketOpened;
 
 	/** The send pipeline can't receive emit */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
@@ -146,19 +168,19 @@ public:
 	* Close the sending socket. This is usually automatically done on endplay.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void CloseSendSocket();
+	bool CloseSendSocket();
 
 	/** 
 	* Start listening at given port for udp messages. Will auto-listen on begin play by default
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void OpenReceiveSocket(const FString& InListenIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
+	bool OpenReceiveSocket(const FString& InListenIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
 
 	/**
 	* Close the receiving socket. This is usually automatically done on endplay.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void CloseReceiveSocket();
+	bool CloseReceiveSocket();
 
 	/**
 	* Emit specified bytes to the udp channel.
@@ -166,7 +188,7 @@ public:
 	* @param Message	Bytes
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
-	void EmitBytes(const TArray<uint8>& Bytes);
+	bool EmitBytes(const TArray<uint8>& Bytes);
 
 	virtual void InitializeComponent() override;
 	virtual void UninitializeComponent() override;
