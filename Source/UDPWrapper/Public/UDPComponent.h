@@ -130,7 +130,7 @@ public:
 
 	//Async events
 
-	/** On message received on the receiving socket. */
+	/** On message received on receive socket from Ip address */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPMessageSignature OnReceivedBytes;
 
@@ -142,21 +142,22 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPSocketStateSignature OnReceiveSocketClosed;
 
-	/** The send pipeline is ready to use */
+	/** Called when the send socket is ready to use; optionally open your receive socket to bound send port here */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPSocketSendStateSignature OnSendSocketOpened;
 
-	/** The send pipeline can't receive emit */
+	/** Called when the send socket has been closed */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Events")
 	FUDPSocketStateSignature OnSendSocketClosed;
 
+	/** Defining UDP sending and receiving Ips, ports, and other defaults*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	FUDPSettings Settings;
 
 	/**
 	* Connect to a udp endpoint, optional method if auto-connect is set to true.
 	* Emit function will then work as long the network is reachable. By default
-	* it will attempt this setup for this socket on beginplay.
+	* it will attempt this setup for this socket on BeginPlay.
 	*
 	* @param InIP the ip4 you wish to connect to
 	* @param InPort the udp port you wish to connect to
@@ -165,19 +166,19 @@ public:
 	int32 OpenSendSocket(const FString& InIP = TEXT("127.0.0.1"), const int32 InPort = 3000);
 
 	/**
-	* Close the sending socket. This is usually automatically done on endplay.
+	* Close the sending socket. This is usually automatically done on EndPlay.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	bool CloseSendSocket();
 
 	/** 
-	* Start listening at given port for udp messages. Will auto-listen on begin play by default
+	* Start listening at given port for udp messages. Will auto-listen on BeginPlay by default. Listen IP of 0.0.0.0 means all connections.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	bool OpenReceiveSocket(const FString& InListenIP = TEXT("0.0.0.0"), const int32 InListenPort = 3002);
 
 	/**
-	* Close the receiving socket. This is usually automatically done on endplay.
+	* Close the receiving socket. This is usually automatically done on EndPlay.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "UDP Functions")
 	bool CloseReceiveSocket();
