@@ -54,7 +54,7 @@ which you can convert to convenient strings or structures via socket.io (optiona
 
 #### Receiving on Bound Send port
 
-When you open a send port it will generate a bound send port which you can use to listen. This should help NAT piercing. To use this feature untick should auto open receive and open your receive socket on the send socket open event with the bound port.
+Since v0.9.4 when you open a send port it will generate a bound send port which you can use to listen. This should help NAT piercing. To use this feature untick should auto open receive and open your receive socket on the send socket open event with the bound port.
 
 ![image](https://user-images.githubusercontent.com/542365/112771022-7c8c1900-8fde-11eb-971e-e81c3d4e55cd.png)
 
