@@ -4,6 +4,9 @@
 # Visual Studio 2015 database file
 *.VC.db
 
+# Rider (Jetbrains) project files
+.idea
+
 # Compiled Object files
 *.slo
 *.lo
