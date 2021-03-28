@@ -26,9 +26,9 @@ Select the newly created component and modify any default settings
  
 ![defaults](https://i.imgur.com/wyYN2pU.png)
 
-By default the udp actor component will auto open both send and receive sockets on begin play. If you're only interested in sending, untick should auto open receive and modify your send ip/port to match your desired settings. Conversely you can untick auto open send if you're not interested in sending.
+By default the udp actor component will auto open both send and receive sockets on begin play. If you're only interested in sending, untick should auto open receive; conversely untick auto open send if you're not interested in sending.
  
-Also if you want to connect/listen on your own time untick both and connect manually via e.g. key event
+Also if you want to connect/listen on your own time either or both and connect manually via e.g. key event
  
 ![manual open receive](https://i.imgur.com/HkSvGCb.png)
  
@@ -36,7 +36,7 @@ Receive Ip of 0.0.0.0 will listen to all connections on specified port.
  
 ### Sending
  
-Once your sending socket is opened (more accurately prepared sending socket, since you don't get a callback in UDP like in TCP), use emit to send some data, utf8 conversion provided by socket.io plugin. NB: if you forgot to open your socket, emit will auto-open on default settings and emit.
+Once your sending socket is opened (more accurately prepared socket for sending, since you don't get a callback in UDP like in TCP), use emit to send some data, utf8 conversion provided by socket.io plugin. NB: if you forget to open your socket, emit will auto-open on default settings and emit.
  
 ![emit](https://i.imgur.com/OzG0caw.png)
  
