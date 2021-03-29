@@ -61,7 +61,15 @@ bool UUDPComponent::CloseSendSocket()
 
 bool UUDPComponent::OpenReceiveSocket(const FString& InListenIp /*= TEXT("0.0.0.0")*/, const int32 InListenPort /*= 3002*/)
 {
-	return Native->OpenReceiveSocket(InListenIp, InListenPort);
+	//overwrite settings if used
+	if (Settings.bShouldOpenReceiveToBoundSendPort)
+	{
+		return Native->OpenReceiveSocket(Settings.SendIP, Settings.SendBoundPort);
+	}
+	else
+	{
+		return Native->OpenReceiveSocket(InListenIp, InListenPort);
+	}
 }
 
 bool UUDPComponent::EmitBytes(const TArray<uint8>& Bytes)
@@ -93,14 +101,7 @@ void UUDPComponent::BeginPlay()
 
 	if (Settings.bShouldAutoOpenReceive)
 	{
-		if (Settings.bShouldOpenReceiveToBoundSendPort)
-		{
-			OpenReceiveSocket(Settings.SendIP, Settings.SendBoundPort);
-		}
-		else
-		{
-			OpenReceiveSocket(Settings.ReceiveIP, Settings.ReceivePort);
-		}
+		OpenReceiveSocket(Settings.ReceiveIP, Settings.ReceivePort);
 	}
 }
 
