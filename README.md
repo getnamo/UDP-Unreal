@@ -58,9 +58,9 @@ Since v0.9.5 when you open a send port it will generate a bound send port which 
 
 ![open bound send port](https://user-images.githubusercontent.com/542365/112771022-7c8c1900-8fde-11eb-971e-e81c3d4e55cd.png)
 
-or you can use _Should Auto Open Bound Port_ with both auto open send and receive true and specify a receiving Ip for the bound port and it will automatically do this step for you
+or you can use _Should Open Receive To Bound Send Port_ with both auto open send and receive true and specify a receiving Ip for the bound port and it will automatically do this step for you
 
-![auto open bound send port](https://i.imgur.com/MtWdfCl.png)
+![auto open bound send port](https://user-images.githubusercontent.com/542365/112778515-9129da80-8ff9-11eb-93a3-129c00a8da47.png)
 
  
 ### Reliable Stream
