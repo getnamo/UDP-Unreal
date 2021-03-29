@@ -56,14 +56,15 @@ which you can convert to convenient strings or structures via socket.io (optiona
 
 #### Receiving on Bound Send port
 
-Since v0.9.5 when you open a send port it will generate a bound send port which you can use to listen. This should help NAT piercing. To use this feature untick should auto open receive and open your receive socket on the send socket open event with the bound port.
+Since v0.9.5 when you open a send port it will generate a bound send port which you can use to listen. This should help NAT piercing.
 
-![open bound send port](https://user-images.githubusercontent.com/542365/112771022-7c8c1900-8fde-11eb-971e-e81c3d4e55cd.png)
-
-or you can use _Should Open Receive To Bound Send Port_ with both auto open send and receive true and specify a receiving Ip for the bound port and it will automatically do this step for you
+To use this feature can use _Should Open Receive To Bound Send Port_ which will cause any receive open to automatically bind to your send ip and send bound port.
 
 ![auto open bound send port](https://user-images.githubusercontent.com/542365/112778515-9129da80-8ff9-11eb-93a3-129c00a8da47.png)
 
+Or if you want to manually do this you can untick _Should Auto Open Receive_ and then open with own settings on e.g. send socket open event with the bound port.
+
+![open bound send port](https://user-images.githubusercontent.com/542365/112771022-7c8c1900-8fde-11eb-971e-e81c3d4e55cd.png)
  
 ### Reliable Stream
  
