@@ -30,7 +30,7 @@ Select the newly created component and modify any default settings
 
 By default the udp actor component will auto open both send and receive sockets on begin play. If you're only interested in sending, untick should auto open receive; conversely untick auto open send if you're not interested in sending.
  
-Also if you want to connect/listen on your own time either or both and connect manually via e.g. key event
+Also if you want to connect/listen on your own time, untick either and connect manually via e.g. key event
  
 ![manual open receive](https://i.imgur.com/HkSvGCb.png)
  
