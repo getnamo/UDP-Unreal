@@ -7,6 +7,7 @@
 #include "Common/UdpSocketSender.h"
 #include "UDPComponent.generated.h"
 
+//UDP Connection Settings
 USTRUCT(BlueprintType)
 struct UDPWRAPPER_API FUDPSettings
 {
@@ -77,6 +78,7 @@ public:
 	TFunction<void(int32 SpecifiedPort, int32 BoundPort)> OnSendOpened;
 	TFunction<void(int32 Port)> OnSendClosed;
 
+	//Default settings, on open send/receive they will sync with what was last passed into them
 	FUDPSettings Settings;
 
 	FUDPNative();
@@ -112,8 +114,8 @@ public:
 	//Callback convenience
 	void ClearSendCallbacks();
 	void ClearReceiveCallbacks();
-protected:
 
+protected:
 	FSocket* SenderSocket;
 	FSocket* ReceiverSocket;
 	FUdpSocketReceiver* UDPReceiver;

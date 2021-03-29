@@ -20,7 +20,11 @@ void UUDPComponent::LinkupCallbacks()
 	{
 		Settings.bIsSendOpen = true;
 		Settings.SendBoundPort = BoundPort;	//ensure sync on opened bound port
-		OnSendSocketOpened.Broadcast(SpecifiedPort, BoundPort);
+
+		Settings.SendIP = Native->Settings.SendIP;
+		Settings.SendPort = Native->Settings.SendPort;
+
+		OnSendSocketOpened.Broadcast(Settings.SendPort, Settings.SendBoundPort);
 	};
 	Native->OnSendClosed = [this](int32 Port)
 	{
@@ -29,6 +33,9 @@ void UUDPComponent::LinkupCallbacks()
 	};
 	Native->OnReceiveOpened = [this](int32 Port)
 	{
+		Settings.ReceiveIP = Native->Settings.ReceiveIP;
+		Settings.ReceivePort = Native->Settings.ReceivePort;
+
 		Settings.bIsReceiveOpen = true;
 		OnReceiveSocketOpened.Broadcast(Port);
 	};
@@ -50,6 +57,10 @@ bool UUDPComponent::CloseReceiveSocket()
 
 int32 UUDPComponent::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
 {
+	//Sync side effect sampled settings
+	Native->Settings.SendSocketName = Settings.SendSocketName;
+	Native->Settings.BufferSize = Settings.BufferSize;
+
 	return Native->OpenSendSocket(InIP, InPort);
 }
 
@@ -61,15 +72,12 @@ bool UUDPComponent::CloseSendSocket()
 
 bool UUDPComponent::OpenReceiveSocket(const FString& InListenIp /*= TEXT("0.0.0.0")*/, const int32 InListenPort /*= 3002*/)
 {
-	//overwrite settings if used
-	if (Settings.bShouldOpenReceiveToBoundSendPort)
-	{
-		return Native->OpenReceiveSocket(Settings.SendIP, Settings.SendBoundPort);
-	}
-	else
-	{
-		return Native->OpenReceiveSocket(InListenIp, InListenPort);
-	}
+	//Sync side effect sampled settings
+	Native->Settings.bShouldAutoOpenReceive = Settings.bShouldAutoOpenReceive;
+	Native->Settings.ReceiveSocketName = Settings.ReceiveSocketName;
+	Native->Settings.BufferSize = Settings.BufferSize;
+
+	return Native->OpenReceiveSocket(InListenIp, InListenPort);
 }
 
 bool UUDPComponent::EmitBytes(const TArray<uint8>& Bytes)
@@ -91,7 +99,7 @@ void UUDPComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	//Sync settings
+	//Sync all settings to native. These are duplicated for dev convenience in bp
 	Native->Settings = Settings;
 
 	if (Settings.bShouldAutoOpenSend)
@@ -141,15 +149,18 @@ FUDPNative::~FUDPNative()
 
 int32 FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
 {
+	Settings.SendIP = InIP;
+	Settings.SendPort = InPort;
+
 	RemoteAdress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 
 	bool bIsValid;
-	RemoteAdress->SetIp(*InIP, bIsValid);
-	RemoteAdress->SetPort(InPort);
+	RemoteAdress->SetIp(*Settings.SendIP, bIsValid);
+	RemoteAdress->SetPort(Settings.SendPort);
 
 	if (!bIsValid)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UDP address is invalid <%s:%d>"), *InIP, InPort);
+		UE_LOG(LogTemp, Error, TEXT("UDP address is invalid <%s:%d>"), *Settings.SendIP, Settings.SendPort);
 		return 0;
 	}
 
@@ -174,6 +185,8 @@ int32 FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, co
 bool FUDPNative::CloseSendSocket()
 {
 	bool bDidCloseCorrectly = true;
+	Settings.bIsSendOpen = false;
+
 	if (SenderSocket)
 	{
 		bDidCloseCorrectly = SenderSocket->Close();
@@ -185,8 +198,6 @@ bool FUDPNative::CloseSendSocket()
 			OnSendClosed(Settings.SendPort);
 		}
 	}
-
-	Settings.bIsSendOpen = false;
 
 	return bDidCloseCorrectly;
 }
@@ -202,8 +213,8 @@ bool FUDPNative::EmitBytes(const TArray<uint8>& Bytes)
 	}
 	else if(Settings.bShouldAutoOpenSend)
 	{
-		OpenSendSocket(Settings.SendIP, Settings.SendPort);
-		return EmitBytes(Bytes);
+		bool bDidOpen = OpenSendSocket(Settings.SendIP, Settings.SendPort) != 0;
+		return bDidOpen && EmitBytes(Bytes);
 	}
 
 	return bDidSendCorrectly;
@@ -211,6 +222,23 @@ bool FUDPNative::EmitBytes(const TArray<uint8>& Bytes)
 
 bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")*/, const int32 InListenPort /*= 3002*/)
 {
+	//Sync and overwrite settings
+	if (Settings.bShouldOpenReceiveToBoundSendPort)
+	{
+		if (Settings.SendBoundPort == 0)
+		{
+			UE_LOG(LogTemp, Error, TEXT("FUDPNative::OpenReceiveSocket Can't bind to SendBoundPort if send socket hasn't been opened before this call."));
+			return false;
+		}
+		Settings.ReceiveIP = Settings.SendIP;
+		Settings.ReceivePort = Settings.SendBoundPort;
+	}
+	else
+	{
+		Settings.ReceiveIP = InListenIP;
+		Settings.ReceivePort = InListenPort;
+	}
+
 	bool bDidOpenCorrectly = true;
 
 	if (Settings.bIsReceiveOpen)
@@ -219,10 +247,10 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 	}
 
 	FIPv4Address Addr;
-	FIPv4Address::Parse(InListenIP, Addr);
+	FIPv4Address::Parse(Settings.ReceiveIP, Addr);
 
 	//Create Socket
-	FIPv4Endpoint Endpoint(Addr, InListenPort);
+	FIPv4Endpoint Endpoint(Addr, Settings.ReceivePort);
 
 	ReceiverSocket = FUdpSocketBuilder(*Settings.ReceiveSocketName)
 		.AsNonBlocking()
@@ -269,7 +297,7 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 
 	if (OnReceiveOpened)
 	{
-		OnReceiveOpened(InListenPort);
+		OnReceiveOpened(Settings.ReceivePort);
 	}
 
 	UDPReceiver->Start();
@@ -280,6 +308,7 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 bool FUDPNative::CloseReceiveSocket()
 {
 	bool bDidCloseCorrectly = true;
+	Settings.bIsReceiveOpen = false;
 
 	if (ReceiverSocket)
 	{
@@ -296,8 +325,6 @@ bool FUDPNative::CloseReceiveSocket()
 			OnReceiveClosed(Settings.ReceivePort);
 		}
 	}
-
-	Settings.bIsReceiveOpen = false;
 
 	return bDidCloseCorrectly;
 }
