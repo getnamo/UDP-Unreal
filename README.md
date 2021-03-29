@@ -56,7 +56,7 @@ which you can convert to convenient strings or structures via socket.io (optiona
 
 #### Receiving on Bound Send port
 
-Since v0.9.5 when you open a send port it will generate a bound send port which you can use to listen. This should help NAT piercing.
+Since v0.9.5 when you open a send socket it will generate a bound send port which you can use to listen for udp events on the receiving side. This should help NAT piercing due to expected behavior.
 
 To use this feature can use _Should Open Receive To Bound Send Port_ which will cause any receive open to automatically bind to your send ip and send bound port.
 
