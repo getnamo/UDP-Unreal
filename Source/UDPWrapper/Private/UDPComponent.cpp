@@ -93,9 +93,9 @@ void UUDPComponent::BeginPlay()
 
 	if (Settings.bShouldAutoOpenReceive)
 	{
-		if (Settings.bShouldAutoOpenBoundPort)
+		if (Settings.bShouldOpenReceiveToBoundSendPort)
 		{
-			OpenReceiveSocket(Settings.ReceiveIP, Settings.SendBoundPort);
+			OpenReceiveSocket(Settings.SendIP, Settings.SendBoundPort);
 		}
 		else
 		{
@@ -318,7 +318,7 @@ FUDPSettings::FUDPSettings()
 {
 	bShouldAutoOpenSend = true;
 	bShouldAutoOpenReceive = true;
-	bShouldAutoOpenBoundPort = false;
+	bShouldOpenReceiveToBoundSendPort = false;
 	bReceiveDataOnGameThread = true;
 	SendIP = FString(TEXT("127.0.0.1"));
 	SendPort = 3001;

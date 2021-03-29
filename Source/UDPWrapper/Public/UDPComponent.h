@@ -51,9 +51,9 @@ struct UDPWRAPPER_API FUDPSettings
 	bool bShouldAutoOpenReceive;
 
 	/** If bShouldAutoOpenSend and bShouldAutoOpenReceive is true, 
-	this will open it to the bound send port. NB: receive ip of 127.0.0.1 may be required.*/
+	this will open it to the bound send port at specified send ip.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
-	bool bShouldAutoOpenBoundPort;
+	bool bShouldOpenReceiveToBoundSendPort;
 
 	/** Whether we should process our data on the gamethread or the udp thread. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
