@@ -4,9 +4,11 @@ Convenience ActorComponent UDP wrapper for Unreal Engine 4.
 [![GitHub release](https://img.shields.io/github/release/getnamo/udp-ue4.svg)](https://github.com/getnamo/udp-ue4/releases)
 [![Github All Releases](https://img.shields.io/github/downloads/getnamo/udp-ue4/total.svg)](https://github.com/getnamo/udp-ue4/releases)
 
-This may not be the most sensible wrapper for your use case, but is meant to co-exist with https://github.com/getnamo/socketio-client-ue4 with similar workflow.
+This may not be the most sensible wrapper for your use case, but is meant to co-exist with https://github.com/getnamo/socketio-client-ue4 with similar workflow. 
 
-Wraps built-in ue4 udp functionality as an actor component with both sending and receiving capabilities. Confirmed working with node.js [dgram](https://nodejs.org/api/dgram.html) (see [example echo server gist](https://gist.github.com/getnamo/8117fdc64209af086ce0337310c52a51) for testing).
+Wraps built-in ue4 udp functionality as an actor component (_UDPComponent_) with both sending and receiving capabilities. Works through the c++ _FUDPNative_ class wrapper which can be included in a custom class if a custom non actor component class is desired. 
+
+Confirmed working with node.js [dgram](https://nodejs.org/api/dgram.html) (see [example echo server gist](https://gist.github.com/getnamo/8117fdc64209af086ce0337310c52a51) for testing).
 
 ## Quick Install & Setup
 
