@@ -26,7 +26,7 @@ Select an actor of choice. Add UDP component to that actor.
  
 Select the newly created component and modify any default settings
 
-![defaults](https://user-images.githubusercontent.com/542365/112784102-a7d62e80-9005-11eb-9f22-e687b978a51c.png)
+![defaults](https://user-images.githubusercontent.com/542365/112784149-c1777600-9005-11eb-8e80-1711ac4d9b98.png)
 
 By default the udp actor component will auto open both send and receive sockets on begin play. If you're only interested in sending, untick should auto open receive; conversely untick auto open send if you're not interested in sending.
  
