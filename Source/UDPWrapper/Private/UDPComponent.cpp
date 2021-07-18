@@ -356,5 +356,8 @@ FUDPSettings::FUDPSettings()
 	SendSocketName = FString(TEXT("ue4-dgram-send"));
 	ReceiveSocketName = FString(TEXT("ue4-dgram-receive"));
 
+	bIsReceiveOpen = false;
+	bIsSendOpen = false;
+
 	BufferSize = 2 * 1024 * 1024;	//default roughly 2mb
 }
