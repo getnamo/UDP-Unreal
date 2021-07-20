@@ -206,7 +206,7 @@ bool FUDPNative::EmitBytes(const TArray<uint8>& Bytes)
 {
 	bool bDidSendCorrectly = true;
 
-	if (SenderSocket->GetConnectionState() == SCS_Connected)
+	if (SenderSocket && SenderSocket->GetConnectionState() == SCS_Connected)
 	{
 		int32 BytesSent = 0;
 		bDidSendCorrectly = SenderSocket->Send(Bytes.GetData(), Bytes.Num(), BytesSent);
