@@ -22,8 +22,12 @@ struct UDPWRAPPER_API FUDPSettings
 	int32 SendPort;
 
 	/** Port to which send is bound to on this client (this should change on each open) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UDP Connection Properties")
 	int32 SendBoundPort;
+
+	/** IP to which send is bound to on this client (this could change on open) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UDP Connection Properties")
+	FString SendBoundIP;
 
 	/** Default receiving socket IP string in form e.g. 0.0.0.0 for all connections, may need 127.0.0.1 for some cases. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
@@ -75,7 +79,7 @@ public:
 	TFunction<void(const TArray<uint8>&, const FString&)> OnReceivedBytes;
 	TFunction<void(int32 Port)> OnReceiveOpened;
 	TFunction<void(int32 Port)> OnReceiveClosed;
-	TFunction<void(int32 SpecifiedPort, int32 BoundPort)> OnSendOpened;
+	TFunction<void(int32 SpecifiedPort, int32 BoundPort, FString BoundIP)> OnSendOpened;
 	TFunction<void(int32 Port)> OnSendClosed;
 
 	//Default settings, on open send/receive they will sync with what was last passed into them
@@ -125,7 +129,7 @@ protected:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPSocketStateSignature, int32, Port);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPSocketSendStateSignature, int32, SpecifiedPort, int32, BoundPort);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FUDPSocketSendStateSignature, int32, SpecifiedPort, int32, BoundPort, const FString&, BoundIP);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPMessageSignature, const TArray<uint8>&, Bytes, const FString&, IPAddress);
 
 UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
