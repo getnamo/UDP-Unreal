@@ -16,15 +16,16 @@ UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(i
 
 void UUDPComponent::LinkupCallbacks()
 {
-	Native->OnSendOpened = [this](int32 SpecifiedPort, int32 BoundPort)
+	Native->OnSendOpened = [this](int32 SpecifiedPort, int32 BoundPort, FString BoundIP)
 	{
 		Settings.bIsSendOpen = true;
 		Settings.SendBoundPort = BoundPort;	//ensure sync on opened bound port
+		Settings.SendBoundIP = BoundIP;
 
 		Settings.SendIP = Native->Settings.SendIP;
 		Settings.SendPort = Native->Settings.SendPort;
 
-		OnSendSocketOpened.Broadcast(Settings.SendPort, Settings.SendBoundPort);
+		OnSendSocketOpened.Broadcast(Settings.SendPort, Settings.SendBoundPort, Settings.SendBoundIP);
 	};
 	Native->OnSendClosed = [this](int32 Port)
 	{
@@ -67,6 +68,7 @@ int32 UUDPComponent::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/,
 bool UUDPComponent::CloseSendSocket()
 {
 	Settings.SendBoundPort = 0;
+	Settings.SendBoundIP = FString(TEXT("0.0.0.0"));
 	return Native->CloseSendSocket();
 }
 
@@ -173,10 +175,13 @@ int32 FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, co
 	bool bDidConnect = SenderSocket->Connect(*RemoteAdress);
 	Settings.bIsSendOpen = true;
 	Settings.SendBoundPort = SenderSocket->GetPortNo();
+	TSharedRef<FInternetAddr> SendBoundAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	SenderSocket->GetAddress(*SendBoundAddress);
+	Settings.SendBoundIP = SendBoundAddress->ToString(false);
 
 	if (OnSendOpened)
 	{	
-		OnSendOpened(Settings.SendPort, Settings.SendBoundPort);
+		OnSendOpened(Settings.SendPort, Settings.SendBoundPort, Settings.SendBoundIP);
 	}
 
 	return Settings.SendBoundPort;
@@ -230,7 +235,7 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 			UE_LOG(LogTemp, Error, TEXT("FUDPNative::OpenReceiveSocket Can't bind to SendBoundPort if send socket hasn't been opened before this call."));
 			return false;
 		}
-		Settings.ReceiveIP = Settings.SendIP;
+		Settings.ReceiveIP = Settings.SendBoundIP;
 		Settings.ReceivePort = Settings.SendBoundPort;
 	}
 	else
@@ -351,6 +356,7 @@ FUDPSettings::FUDPSettings()
 	SendIP = FString(TEXT("127.0.0.1"));
 	SendPort = 3001;
 	SendBoundPort = 0;	//invalid if 0
+	SendBoundIP = FString(TEXT("0.0.0.0"));
 	ReceiveIP = FString(TEXT("0.0.0.0"));
 	ReceivePort = 3002;
 	SendSocketName = FString(TEXT("ue4-dgram-send"));
