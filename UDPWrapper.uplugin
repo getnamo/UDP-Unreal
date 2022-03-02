@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.1.2",
+	"VersionName": "1.1.3",
 	"FriendlyName": "UDPWrapper",
 	"Description": "Convenience UDP wrapper plugin.",
 	"Category": "Networking",
