@@ -1,8 +1,8 @@
-# Udp-Unreal
+# UDP-Unreal
 Convenience ActorComponent UDP wrapper for Unreal Engine 4.
 
-[![GitHub release](https://img.shields.io/github/release/getnamo/Udp-Unreal.svg)](https://github.com/getnamo/Udp-Unreal/releases)
-[![Github All Releases](https://img.shields.io/github/downloads/getnamo/Udp-Unreal/total.svg)](https://github.com/getnamo/Udp-Unreal/releases)
+[![GitHub release](https://img.shields.io/github/release/getnamo/UDP-Unreal.svg)](https://github.com/getnamo/UDP-Unreal/releases)
+[![Github All Releases](https://img.shields.io/github/downloads/getnamo/UDP-Unreal/total.svg)](https://github.com/getnamo/UDP-Unreal/releases)
 
 This may not be the most sensible wrapper for your use case, but is meant to co-exist with https://github.com/getnamo/socketio-client-ue4 with similar workflow. 
 
@@ -12,7 +12,7 @@ Confirmed working with node.js [dgram](https://nodejs.org/api/dgram.html) (see [
 
 ## Quick Install & Setup
 
- 1. [Download Latest Release](https://github.com/getnamo/Udp-Unreal/releases)
+ 1. [Download Latest Release](https://github.com/getnamo/UDP-Unreal/releases)
  2. Create new or choose project.
  3. Browse to your project folder (typically found at Documents/Unreal Project/{Your Project Root})
  4. Copy *Plugins* folder into your Project root.
