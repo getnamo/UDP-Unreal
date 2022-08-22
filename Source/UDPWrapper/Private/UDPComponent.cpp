@@ -45,9 +45,9 @@ void UUDPComponent::LinkupCallbacks()
 		Settings.bIsReceiveOpen = false;
 		OnReceiveSocketClosed.Broadcast(Port);
 	};
-	Native->OnReceivedBytes = [this](const TArray<uint8>& Data, const FString& Endpoint)
+	Native->OnReceivedBytes = [this](const TArray<uint8>& Data, const FString& Endpoint, const int32& Port)
 	{
-		OnReceivedBytes.Broadcast(Data, Endpoint);
+		OnReceivedBytes.Broadcast(Data, Endpoint, Port);
 	};
 }
 
@@ -279,22 +279,23 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 		DataPtr->Serialize(Data.GetData(), DataPtr->TotalSize());
 
 		FString SenderIp = Endpoint.Address.ToString();
+		int32 SenderPort = Endpoint.Port;
 
 		if (Settings.bReceiveDataOnGameThread)
 		{
 			//Copy data to receiving thread via lambda capture
-			AsyncTask(ENamedThreads::GameThread, [this, Data, SenderIp]()
+			AsyncTask(ENamedThreads::GameThread, [this, Data, SenderIp, SenderPort]()
 			{
 				//double check we're still bound on this thread
 				if (OnReceivedBytes)
 				{
-					OnReceivedBytes(Data, SenderIp);
+					OnReceivedBytes(Data, SenderIp, SenderPort);
 				}
 			});
 		}
 		else
 		{
-			OnReceivedBytes(Data, SenderIp);
+			OnReceivedBytes(Data, SenderIp, SenderPort);
 		}
 	});
 
