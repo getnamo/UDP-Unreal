@@ -76,7 +76,7 @@ class UDPWRAPPER_API FUDPNative
 {
 public:
 
-	TFunction<void(const TArray<uint8>&, const FString&)> OnReceivedBytes;
+	TFunction<void(const TArray<uint8>&, const FString&, const int32&)> OnReceivedBytes;
 	TFunction<void(int32 Port)> OnReceiveOpened;
 	TFunction<void(int32 Port)> OnReceiveClosed;
 	TFunction<void(int32 SpecifiedPort, int32 BoundPort, FString BoundIP)> OnSendOpened;
@@ -130,7 +130,7 @@ protected:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPSocketStateSignature, int32, Port);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FUDPSocketSendStateSignature, int32, SpecifiedPort, int32, BoundPort, const FString&, BoundIP);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUDPMessageSignature, const TArray<uint8>&, Bytes, const FString&, IPAddress);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FUDPMessageSignature, const TArray<uint8>&, Bytes, const FString&, IPAddress, const int32&, Port);
 
 UCLASS(ClassGroup = "Networking", meta = (BlueprintSpawnableComponent))
 class UDPWRAPPER_API UUDPComponent : public UActorComponent
