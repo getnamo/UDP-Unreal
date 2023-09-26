@@ -1,5 +1,5 @@
 # UDP-Unreal
-Convenience ActorComponent UDP wrapper for Unreal Engine 4.
+Convenience ActorComponent UDP wrapper for the Unreal Engine.
 
 [![GitHub release](https://img.shields.io/github/release/getnamo/UDP-Unreal.svg)](https://github.com/getnamo/UDP-Unreal/releases)
 [![Github All Releases](https://img.shields.io/github/downloads/getnamo/UDP-Unreal/total.svg)](https://github.com/getnamo/UDP-Unreal/releases)
