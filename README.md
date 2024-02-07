@@ -10,6 +10,8 @@ Wraps built-in Unreal udp functionality as an actor component (_UDPComponent_) w
 
 Confirmed working with node.js [dgram](https://nodejs.org/api/dgram.html) (see [example echo server gist](https://gist.github.com/getnamo/8117fdc64209af086ce0337310c52a51) for testing).
 
+[Discord Server](https://discord.gg/qfJUyxaW4s)
+
 ## Quick Install & Setup
 
  1. [Download Latest Release](https://github.com/getnamo/UDP-Unreal/releases)
