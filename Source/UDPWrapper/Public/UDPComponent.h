@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "Sockets/Public/IPAddress.h"
+#include "IPAddress.h"
 #include "Common/UdpSocketBuilder.h"
 #include "Common/UdpSocketReceiver.h"
 #include "Common/UdpSocketSender.h"
