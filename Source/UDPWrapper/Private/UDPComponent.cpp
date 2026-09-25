@@ -1,6 +1,7 @@
 
 #include "UDPComponent.h"
 #include "Async/Async.h"
+#include "Containers/Ticker.h"
 #include "SocketSubsystem.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -16,38 +17,63 @@ UUDPComponent::UUDPComponent(const FObjectInitializer &init) : UActorComponent(i
 
 void UUDPComponent::LinkupCallbacks()
 {
-	Native->OnSendOpened = [this](int32 SpecifiedPort, int32 BoundPort, FString BoundIP)
+	//Callbacks may be invoked after this component is destroyed (e.g. level transition), guard with a weak ptr
+	TWeakObjectPtr<UUDPComponent> WeakThis = this;
+
+	Native->OnSendOpened = [WeakThis](int32 SpecifiedPort, int32 BoundPort, FString BoundIP)
 	{
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		FUDPSettings& Settings = WeakThis->Settings;
 		Settings.bIsSendOpen = true;
 		Settings.SendBoundPort = BoundPort;	//ensure sync on opened bound port
 		Settings.SendBoundIP = BoundIP;
 
-		Settings.SendIP = Native->Settings.SendIP;
-		Settings.SendPort = Native->Settings.SendPort;
+		Settings.SendIP = WeakThis->Native->Settings.SendIP;
+		Settings.SendPort = WeakThis->Native->Settings.SendPort;
 
-		OnSendSocketOpened.Broadcast(Settings.SendPort, Settings.SendBoundPort, Settings.SendBoundIP);
+		WeakThis->OnSendSocketOpened.Broadcast(Settings.SendPort, Settings.SendBoundPort, Settings.SendBoundIP);
 	};
-	Native->OnSendClosed = [this](int32 Port)
+	Native->OnSendClosed = [WeakThis](int32 Port)
 	{
-		Settings.bIsSendOpen = false;
-		OnSendSocketClosed.Broadcast(Port);
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		WeakThis->Settings.bIsSendOpen = false;
+		WeakThis->OnSendSocketClosed.Broadcast(Port);
 	};
-	Native->OnReceiveOpened = [this](int32 Port)
+	Native->OnReceiveOpened = [WeakThis](int32 Port)
 	{
-		Settings.ReceiveIP = Native->Settings.ReceiveIP;
-		Settings.ReceivePort = Native->Settings.ReceivePort;
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		FUDPSettings& Settings = WeakThis->Settings;
+		Settings.ReceiveIP = WeakThis->Native->Settings.ReceiveIP;
+		Settings.ReceivePort = WeakThis->Native->Settings.ReceivePort;
 
 		Settings.bIsReceiveOpen = true;
-		OnReceiveSocketOpened.Broadcast(Port);
+		WeakThis->OnReceiveSocketOpened.Broadcast(Port);
 	};
-	Native->OnReceiveClosed = [this](int32 Port)
+	Native->OnReceiveClosed = [WeakThis](int32 Port)
 	{
-		Settings.bIsReceiveOpen = false;
-		OnReceiveSocketClosed.Broadcast(Port);
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		WeakThis->Settings.bIsReceiveOpen = false;
+		WeakThis->OnReceiveSocketClosed.Broadcast(Port);
 	};
-	Native->OnReceivedBytes = [this](const TArray<uint8>& Data, const FString& Endpoint, const int32& Port)
+	Native->OnReceivedBytes = [WeakThis](const TArray<uint8>& Data, const FString& Endpoint, const int32& Port)
 	{
-		OnReceivedBytes.Broadcast(Data, Endpoint, Port);
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		WeakThis->OnReceivedBytes.Broadcast(Data, Endpoint, Port);
 	};
 }
 
@@ -59,6 +85,7 @@ bool UUDPComponent::CloseReceiveSocket()
 int32 UUDPComponent::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, const int32 InPort /*= 3000*/)
 {
 	//Sync side effect sampled settings
+	Native->Settings.bShouldAutoOpenSend = Settings.bShouldAutoOpenSend;
 	Native->Settings.SendSocketName = Settings.SendSocketName;
 	Native->Settings.BufferSize = Settings.BufferSize;
 
@@ -76,6 +103,10 @@ bool UUDPComponent::OpenReceiveSocket(const FString& InListenIp /*= TEXT("0.0.0.
 {
 	//Sync side effect sampled settings
 	Native->Settings.bShouldAutoOpenReceive = Settings.bShouldAutoOpenReceive;
+	Native->Settings.bShouldOpenReceiveToBoundSendPort = Settings.bShouldOpenReceiveToBoundSendPort;
+	Native->Settings.bReceiveDataOnGameThread = Settings.bReceiveDataOnGameThread;
+	Native->Settings.ReceiveGameThreadTimeBudgetMs = Settings.ReceiveGameThreadTimeBudgetMs;
+	Native->Settings.ReceiveMulticastGroupIP = Settings.ReceiveMulticastGroupIP;
 	Native->Settings.ReceiveSocketName = Settings.ReceiveSocketName;
 	Native->Settings.BufferSize = Settings.BufferSize;
 
@@ -130,6 +161,8 @@ FUDPNative::FUDPNative()
 {
 	SenderSocket = nullptr;
 	ReceiverSocket = nullptr;
+	UDPReceiver = nullptr;
+	SocketSubsystem = nullptr;
 
 	ClearReceiveCallbacks();
 	ClearSendCallbacks();
@@ -166,7 +199,20 @@ int32 FUDPNative::OpenSendSocket(const FString& InIP /*= TEXT("127.0.0.1")*/, co
 		return 0;
 	}
 
-	SenderSocket = FUdpSocketBuilder(*Settings.SendSocketName).AsReusable().WithBroadcast();
+	//Don't leak a previously opened socket
+	if (SenderSocket)
+	{
+		CloseSendSocket();
+	}
+
+	//Multicast loopback restores the OS default (the builder disables it) so local listeners receive multicast sends
+	SenderSocket = FUdpSocketBuilder(*Settings.SendSocketName).AsReusable().WithBroadcast().WithMulticastLoopback();
+
+	if (!SenderSocket)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UDP failed to create send socket for <%s:%d>"), *Settings.SendIP, Settings.SendPort);
+		return 0;
+	}
 
 	//Set Send Buffer Size
 	SenderSocket->SetSendBufferSize(Settings.BufferSize, Settings.BufferSize);
@@ -257,17 +303,39 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 	//Create Socket
 	FIPv4Endpoint Endpoint(Addr, Settings.ReceivePort);
 
-	ReceiverSocket = FUdpSocketBuilder(*Settings.ReceiveSocketName)
+	FUdpSocketBuilder Builder = FUdpSocketBuilder(*Settings.ReceiveSocketName)
 		.AsNonBlocking()
 		.AsReusable()
 		.BoundToEndpoint(Endpoint)
 		.WithReceiveBufferSize(Settings.BufferSize);
 
+	if (!Settings.ReceiveMulticastGroupIP.IsEmpty())
+	{
+		FIPv4Address GroupAddr;
+		if (!FIPv4Address::Parse(Settings.ReceiveMulticastGroupIP, GroupAddr) || !GroupAddr.IsMulticastAddress())
+		{
+			UE_LOG(LogTemp, Error, TEXT("UDP multicast group <%s> is not a valid multicast address"), *Settings.ReceiveMulticastGroupIP);
+			return false;
+		}
+		//Loopback so packets sent to the group from this machine are also received (windows applies this on the receive side)
+		Builder.JoinedToGroup(GroupAddr).WithMulticastLoopback();
+	}
+
+	ReceiverSocket = Builder.Build();
+
+	if (!ReceiverSocket)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UDP failed to bind receive socket to <%s:%d>"), *Settings.ReceiveIP, Settings.ReceivePort);
+		return false;
+	}
+
 	FTimespan ThreadWaitTime = FTimespan::FromMilliseconds(100);
 	FString ThreadName = FString::Printf(TEXT("UDP RECEIVER-FUDPNative"));
 	UDPReceiver = new FUdpSocketReceiver(ReceiverSocket, ThreadWaitTime, *ThreadName);
 
-	UDPReceiver->OnDataReceived().BindLambda([this](const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint)
+	TWeakPtr<bool, ESPMode::ThreadSafe> WeakLifetime = LifetimeToken;
+
+	UDPReceiver->OnDataReceived().BindLambda([this, WeakLifetime](const FArrayReaderPtr& DataPtr, const FIPv4Endpoint& Endpoint)
 	{
 		if (!OnReceivedBytes)
 		{
@@ -283,15 +351,20 @@ bool FUDPNative::OpenReceiveSocket(const FString& InListenIP /*= TEXT("0.0.0.0")
 
 		if (Settings.bReceiveDataOnGameThread)
 		{
-			//Copy data to receiving thread via lambda capture
-			AsyncTask(ENamedThreads::GameThread, [this, Data, SenderIp, SenderPort]()
+			//Queue data for the game thread, one drain task handles a whole burst of packets
+			ReceiveQueue.Enqueue({ MoveTemp(Data), MoveTemp(SenderIp), SenderPort });
+
+			if (!bReceiveDrainScheduled.exchange(true))
 			{
-				//double check we're still bound on this thread
-				if (OnReceivedBytes)
+				AsyncTask(ENamedThreads::GameThread, [this, WeakLifetime]()
 				{
-					OnReceivedBytes(Data, SenderIp, SenderPort);
-				}
-			});
+					//this native may have been destroyed before the task ran
+					if (WeakLifetime.IsValid())
+					{
+						DrainReceiveQueue();
+					}
+				});
+			}
 		}
 		else
 		{
@@ -322,6 +395,9 @@ bool FUDPNative::CloseReceiveSocket()
 		delete UDPReceiver;
 		UDPReceiver = nullptr;
 
+		//Don't deliver packets after close
+		ReceiveQueue.Empty();
+
 		bDidCloseCorrectly = ReceiverSocket->Close();
 		ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->DestroySocket(ReceiverSocket);
 		ReceiverSocket = nullptr;
@@ -333,6 +409,60 @@ bool FUDPNative::CloseReceiveSocket()
 	}
 
 	return bDidCloseCorrectly;
+}
+
+void FUDPNative::DrainReceiveQueue()
+{
+	//Packets queued from here on schedule another drain
+	bReceiveDrainScheduled = false;
+
+	if (DeliverQueuedPackets())
+	{
+		return;
+	}
+
+	//Over budget, deliver the rest on following frames so the game thread can't be starved by incoming data.
+	//A single ticker drains one budget slice per frame (tickers added during a tick run in that same tick).
+	bReceiveDrainScheduled = true;
+
+	TWeakPtr<bool, ESPMode::ThreadSafe> WeakLifetime = LifetimeToken;
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this, WeakLifetime](float DeltaTime)
+	{
+		if (!WeakLifetime.IsValid())
+		{
+			return false;
+		}
+		if (!DeliverQueuedPackets())
+		{
+			return true;
+		}
+
+		bReceiveDrainScheduled = false;
+
+		//A packet may have been queued before the flag cleared, keep ticking to deliver it
+		return !ReceiveQueue.IsEmpty() && !bReceiveDrainScheduled.exchange(true);
+	}));
+}
+
+bool FUDPNative::DeliverQueuedPackets()
+{
+	const double BudgetSeconds = Settings.ReceiveGameThreadTimeBudgetMs / 1000.0;
+	const double StartTime = FPlatformTime::Seconds();
+
+	FReceivedPacket Packet;
+	while (ReceiveQueue.Dequeue(Packet))
+	{
+		if (OnReceivedBytes)
+		{
+			OnReceivedBytes(Packet.Data, Packet.SenderIp, Packet.SenderPort);
+		}
+
+		if (BudgetSeconds > 0.0 && !ReceiveQueue.IsEmpty() && (FPlatformTime::Seconds() - StartTime) > BudgetSeconds)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void FUDPNative::ClearSendCallbacks()
@@ -354,6 +484,7 @@ FUDPSettings::FUDPSettings()
 	bShouldAutoOpenReceive = true;
 	bShouldOpenReceiveToBoundSendPort = false;
 	bReceiveDataOnGameThread = true;
+	ReceiveGameThreadTimeBudgetMs = 0.f;
 	SendIP = FString(TEXT("127.0.0.1"));
 	SendPort = 3001;
 	SendBoundPort = 0;	//invalid if 0

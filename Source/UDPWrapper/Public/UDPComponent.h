@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
+#include "Containers/Queue.h"
 #include "IPAddress.h"
+#include <atomic>
 #include "Common/UdpSocketBuilder.h"
 #include "Common/UdpSocketReceiver.h"
 #include "Common/UdpSocketSender.h"
@@ -37,6 +39,10 @@ struct UDPWRAPPER_API FUDPSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	int32 ReceivePort;
 
+	/** If set (e.g. 239.0.0.1), the receive socket will join this multicast group. Keep ReceiveIP at 0.0.0.0 when using multicast. Default empty (no multicast). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
+	FString ReceiveMulticastGroupIP;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	FString SendSocketName;
 
@@ -62,6 +68,13 @@ struct UDPWRAPPER_API FUDPSettings
 	/** Whether we should process our data on the gamethread or the udp thread. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties")
 	bool bReceiveDataOnGameThread;
+
+	/**
+	* Max time in ms spent per frame delivering received data on the game thread, remaining packets are delivered next frame.
+	* Use this to avoid freezing when packets arrive faster than they can be processed. 0 = unlimited (default).
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Connection Properties", meta = (ClampMin = "0"))
+	float ReceiveGameThreadTimeBudgetMs;
 
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Connection Properties")
 	bool bIsReceiveOpen;
@@ -123,9 +136,29 @@ protected:
 	FSocket* SenderSocket;
 	FSocket* ReceiverSocket;
 	FUdpSocketReceiver* UDPReceiver;
+
+	/** Packets received on the udp thread waiting to be delivered on the game thread */
+	struct FReceivedPacket
+	{
+		TArray<uint8> Data;
+		FString SenderIp;
+		int32 SenderPort;
+	};
+	TQueue<FReceivedPacket, EQueueMode::Mpsc> ReceiveQueue;
+	std::atomic<bool> bReceiveDrainScheduled{ false };
+
+	/** Delivers queued packets on the game thread within the time budget, defers the rest to following frames */
+	void DrainReceiveQueue();
+
+	/** Delivers queued packets until empty (returns true) or over the time budget (returns false) */
+	bool DeliverQueuedPackets();
+
 	FString SocketDescription;
 	TSharedPtr<FInternetAddr> RemoteAdress;
 	ISocketSubsystem* SocketSubsystem;
+
+	/** Weakly captured by game thread tasks so they can detect if this native was destroyed before they ran */
+	TSharedRef<bool, ESPMode::ThreadSafe> LifetimeToken = MakeShared<bool, ESPMode::ThreadSafe>(true);
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUDPSocketStateSignature, int32, Port);
